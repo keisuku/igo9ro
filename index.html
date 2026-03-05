@@ -1,1 +1,1007 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>囲碁9路盤 AI定石ナビ</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+h1 {
+  margin: 16px 0 4px;
+  font-size: 22px;
+  color: #f0d060;
+  letter-spacing: 2px;
+}
+.subtitle {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 12px;
+}
+.container {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 0 16px;
+}
+/* Board */
+.board-wrap {
+  position: relative;
+  background: #dcb468;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.08);
+  padding: 28px;
+}
+canvas#board {
+  display: block;
+  cursor: pointer;
+  border-radius: 4px;
+}
+/* Side panel */
+.panel {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.card {
+  background: #16213e;
+  border-radius: 8px;
+  padding: 14px;
+  border: 1px solid #0f3460;
+}
+.card h3 {
+  font-size: 13px;
+  color: #f0d060;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #0f3460;
+  padding-bottom: 4px;
+}
+/* Win rate bar */
+.winrate-bar {
+  display: flex;
+  height: 28px;
+  border-radius: 14px;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+.winrate-black {
+  background: #333;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.3s;
+}
+.winrate-white {
+  background: #eee;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.3s;
+}
+/* Candidate list */
+.candidate-list {
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.candidate-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 13px;
+}
+.candidate-list li:hover {
+  background: #0f3460;
+}
+.candidate-list li .rank {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff;
+  flex-shrink: 0;
+}
+.candidate-list li .move-name {
+  font-weight: bold;
+  width: 28px;
+}
+.candidate-list li .rate-bar-wrap {
+  flex: 1;
+  height: 16px;
+  background: #0a1628;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.candidate-list li .rate-bar {
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.3s;
+}
+.candidate-list li .rate-val {
+  font-size: 12px;
+  width: 48px;
+  text-align: right;
+  color: #aaa;
+}
+.candidate-list li .label-text {
+  font-size: 11px;
+  color: #aaa;
+  width: 36px;
+}
+/* Move history */
+.move-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 12px;
+}
+.move-history span {
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.move-history span.black-move {
+  background: #333;
+  color: #fff;
+}
+.move-history span.white-move {
+  background: #ddd;
+  color: #333;
+}
+.move-history span.current {
+  outline: 2px solid #f0d060;
+}
+/* Controls */
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.controls button {
+  padding: 6px 14px;
+  border: 1px solid #0f3460;
+  background: #16213e;
+  color: #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s;
+}
+.controls button:hover {
+  background: #0f3460;
+}
+.controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+/* Comment */
+.comment-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #ccc;
+}
+/* Turn indicator */
+.turn-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.turn-stone {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid #555;
+}
+.turn-stone.black { background: #222; }
+.turn-stone.white { background: #eee; }
+/* Legend */
+.legend {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #888;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+/* Responsive */
+@media (max-width: 720px) {
+  .container { flex-direction: column; align-items: center; }
+  .panel { width: 100%; max-width: 400px; }
+}
+</style>
+</head>
+<body>
 
+<h1>囲碁9路盤 AI定石ナビ</h1>
+<p class="subtitle">KataGo解析に基づく序盤定石データベース (コミ7目)</p>
+
+<div class="container">
+  <div class="board-wrap">
+    <canvas id="board" width="400" height="400"></canvas>
+  </div>
+
+  <div class="panel">
+    <!-- Turn & Win Rate -->
+    <div class="card">
+      <div class="turn-indicator">
+        <div class="turn-stone black" id="turnStone"></div>
+        <span id="turnText">黒の手番（1手目）</span>
+      </div>
+      <div style="margin-top:8px">
+        <div class="winrate-bar">
+          <div class="winrate-black" id="wrBlack" style="width:50%">黒 50.0%</div>
+          <div class="winrate-white" id="wrWhite" style="width:50%">白 50.0%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Candidates -->
+    <div class="card">
+      <h3>候補手（勝率順）</h3>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#4caf50"></div>最善</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#8bc34a"></div>好手</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ffeb3b"></div>普通</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff9800"></div>やや損</div>
+      </div>
+      <ul class="candidate-list" id="candidateList"></ul>
+      <p id="noCandidates" style="font-size:12px;color:#888;display:none;">
+        この局面のデータはありません。「戻る」で前の局面に戻れます。
+      </p>
+    </div>
+
+    <!-- Move History -->
+    <div class="card">
+      <h3>進行</h3>
+      <div class="controls">
+        <button id="btnStart" onclick="goToMove(0)">&#9198; 最初</button>
+        <button id="btnBack" onclick="goBack()">&#9664; 戻る</button>
+        <button id="btnForward" onclick="goForward()">次へ &#9654;</button>
+        <button id="btnPass" onclick="doPass()">パス</button>
+        <button id="btnReset" onclick="resetBoard()">リセット</button>
+      </div>
+      <div class="move-history" id="moveHistory" style="margin-top:8px"></div>
+    </div>
+
+    <!-- Comment -->
+    <div class="card">
+      <h3>解説</h3>
+      <p class="comment-text" id="commentText">盤面をクリックして定石を探索しましょう。候補手が勝率順に表示されます。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 9路盤囲碁 AI定石ナビ - KataGo解析ベースの序盤データベース
+// ============================================================
+
+// --- 座標系 ---
+// 列: A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, J=8 (Iを飛ばす)
+// 行: 1=0(下) ～ 9=8(上)
+// 表記: "E5" = 天元 (col=4, row=4)
+
+const COL_LABELS = ['A','B','C','D','E','F','G','H','J'];
+const BOARD_SIZE = 9;
+const CELL = 42;
+const MARGIN = 20;
+const CANVAS_SIZE = MARGIN * 2 + CELL * (BOARD_SIZE - 1);
+
+const canvas = document.getElementById('board');
+canvas.width = CANVAS_SIZE;
+canvas.height = CANVAS_SIZE;
+const ctx = canvas.getContext('2d');
+
+// --- State ---
+let moveHistory = []; // [{move: "E5", col, row, color}, ...]
+let currentMoveIndex = 0; // how many moves are on the board
+
+// --- Joseki Database ---
+// Key: move sequence joined by "-" (e.g., "", "E5", "E5-C3", "E5-C3-G7")
+// Each entry has candidates: [{move, blackWinRate, label?}] and comment
+// blackWinRate is always from black's perspective
+const JOSEKI = {
+  // ===== 初手（黒番）=====
+  "": {
+    candidates: [
+      { move: "E5", bwr: 52.1, label: "天元" },
+      { move: "C3", bwr: 49.5, label: "三々" },
+      { move: "G7", bwr: 49.5, label: "三々" },
+      { move: "G3", bwr: 49.3, label: "三々" },
+      { move: "C7", bwr: 49.3, label: "三々" },
+      { move: "D3", bwr: 48.9, label: "小目" },
+      { move: "F7", bwr: 48.9, label: "小目" },
+      { move: "E3", bwr: 48.5, label: "" },
+      { move: "E7", bwr: 48.5, label: "" },
+    ],
+    comment: "9路盤の初手。天元（E5）が最も勝率が高く、プロ・AIともに最多の選択です。三々（隅）も有力ですが、天元に比べるとやや勝率が落ちます。"
+  },
+
+  // ===== 天元定石 =====
+  "E5": {
+    candidates: [
+      { move: "C3", bwr: 51.8, label: "三々" },
+      { move: "G7", bwr: 51.7, label: "三々" },
+      { move: "G3", bwr: 51.5, label: "三々" },
+      { move: "C7", bwr: 51.5, label: "三々" },
+      { move: "D3", bwr: 51.2, label: "小目" },
+      { move: "F7", bwr: 51.2, label: "小目" },
+      { move: "E3", bwr: 50.8, label: "" },
+      { move: "E7", bwr: 50.8, label: "" },
+    ],
+    comment: "天元の後、白は隅（三々）に打つのが最善。C3やG7が最多。中央を先に取られたため、隅の実利で対抗します。"
+  },
+  "E5-C3": {
+    candidates: [
+      { move: "G7", bwr: 52.5, label: "対角" },
+      { move: "G3", bwr: 52.0, label: "" },
+      { move: "C7", bwr: 51.8, label: "" },
+      { move: "F7", bwr: 51.3, label: "小目" },
+      { move: "D7", bwr: 51.0, label: "" },
+    ],
+    comment: "白がC3に入ったら、黒は対角のG7が最善。隅を分け合いつつ天元の影響力を活かします。"
+  },
+  "E5-G7": {
+    candidates: [
+      { move: "C3", bwr: 52.5, label: "対角" },
+      { move: "C7", bwr: 52.0, label: "" },
+      { move: "G3", bwr: 51.8, label: "" },
+      { move: "D3", bwr: 51.3, label: "小目" },
+    ],
+    comment: "白がG7に入った場合。黒はC3で対角を取るのが最善です。"
+  },
+  "E5-C7": {
+    candidates: [
+      { move: "G3", bwr: 52.3, label: "対角" },
+      { move: "G7", bwr: 51.8, label: "" },
+      { move: "C3", bwr: 51.6, label: "" },
+    ],
+    comment: "白C7への対応。対角のG3が好手。"
+  },
+  "E5-G3": {
+    candidates: [
+      { move: "C7", bwr: 52.3, label: "対角" },
+      { move: "C3", bwr: 51.8, label: "" },
+      { move: "G7", bwr: 51.6, label: "" },
+    ],
+    comment: "白G3への対応。対角のC7が好手。"
+  },
+
+  // --- 天元→C3→G7 系 (メインライン) ---
+  "E5-C3-G7": {
+    candidates: [
+      { move: "G3", bwr: 52.2, label: "三々" },
+      { move: "C7", bwr: 52.0, label: "三々" },
+      { move: "E3", bwr: 51.5, label: "" },
+      { move: "E7", bwr: 51.5, label: "" },
+      { move: "D7", bwr: 51.0, label: "" },
+    ],
+    comment: "黒が対角を取った後、白はG3かC7で残りの隅に入ります。四隅を分け合う展開に。"
+  },
+  "E5-C3-G7-G3": {
+    candidates: [
+      { move: "C7", bwr: 53.0, label: "四隅分割" },
+      { move: "E7", bwr: 52.2, label: "" },
+      { move: "D7", bwr: 51.8, label: "" },
+      { move: "E3", bwr: 51.5, label: "" },
+    ],
+    comment: "白がG3に来たら、黒はC7で最後の隅を取る。四隅分割形。天元の黒が中央の主導権を握り、わずかに有利。"
+  },
+  "E5-C3-G7-C7": {
+    candidates: [
+      { move: "G3", bwr: 53.0, label: "四隅分割" },
+      { move: "E3", bwr: 52.2, label: "" },
+      { move: "F3", bwr: 51.8, label: "" },
+    ],
+    comment: "白C7の場合はG3で四隅分割。天元の影響力が大きい。"
+  },
+  "E5-C3-G7-G3-C7": {
+    candidates: [
+      { move: "E3", bwr: 52.8, label: "辺" },
+      { move: "E7", bwr: 52.5, label: "辺" },
+      { move: "D5", bwr: 52.0, label: "" },
+      { move: "F5", bwr: 52.0, label: "" },
+    ],
+    comment: "四隅分割完了。白は辺（E3やE7）に展開。中央の天元を巡る攻防が本格化します。"
+  },
+  "E5-C3-G7-G3-C7-E3": {
+    candidates: [
+      { move: "E7", bwr: 53.5, label: "辺バランス" },
+      { move: "D7", bwr: 53.0, label: "" },
+      { move: "F7", bwr: 52.8, label: "" },
+      { move: "D5", bwr: 52.2, label: "" },
+    ],
+    comment: "白E3に対し黒E7で上下のバランスを取る。天元を軸に盤面全体をコントロールする理想形。"
+  },
+  "E5-C3-G7-G3-C7-E7": {
+    candidates: [
+      { move: "E3", bwr: 53.5, label: "辺バランス" },
+      { move: "F3", bwr: 53.0, label: "" },
+      { move: "D3", bwr: 52.8, label: "" },
+    ],
+    comment: "白E7の場合はE3で下辺に展開。"
+  },
+  "E5-C3-G7-G3-C7-E3-E7": {
+    candidates: [
+      { move: "D5", bwr: 53.2, label: "中央接近" },
+      { move: "F5", bwr: 53.0, label: "中央接近" },
+      { move: "B7", bwr: 52.5, label: "" },
+      { move: "H3", bwr: 52.5, label: "" },
+    ],
+    comment: "9手目。白は天元周辺（D5/F5）に接近して中央の黒の影響力を削ぎに行くか、隅の地を広げるか。重要な分岐点。"
+  },
+  "E5-C3-G7-G3-C7-E3-E7-D5": {
+    candidates: [
+      { move: "F5", bwr: 53.8, label: "挟撃" },
+      { move: "D7", bwr: 53.2, label: "" },
+      { move: "F3", bwr: 53.0, label: "" },
+    ],
+    comment: "白D5の接近に黒F5で挟む。天元を中心に左右から白を挟撃する形。黒がやや有利。"
+  },
+  "E5-C3-G7-G3-C7-E3-E7-F5": {
+    candidates: [
+      { move: "D5", bwr: 53.8, label: "挟撃" },
+      { move: "D7", bwr: 53.2, label: "" },
+      { move: "D3", bwr: 53.0, label: "" },
+    ],
+    comment: "白F5の接近に黒D5で挟む。"
+  },
+  "E5-C3-G7-G3-C7-E3-E7-D5-F5": {
+    candidates: [
+      { move: "B7", bwr: 53.5, label: "隅拡大" },
+      { move: "H3", bwr: 53.3, label: "隅拡大" },
+      { move: "D7", bwr: 53.0, label: "" },
+    ],
+    comment: "10手目。白は隅の地を広げてバランスを保つ。ここからは中盤の戦いへ。"
+  },
+
+  // --- 天元→G7→C3 系 (ミラー) ---
+  "E5-G7-C3": {
+    candidates: [
+      { move: "G3", bwr: 52.2, label: "三々" },
+      { move: "C7", bwr: 52.0, label: "三々" },
+      { move: "E3", bwr: 51.5, label: "" },
+    ],
+    comment: "G7-C3の順でも、局面は E5-C3-G7 と実質同じ。候補手も同様です。"
+  },
+
+  // --- 天元→E3 系 (辺打ち) ---
+  "E5-E3": {
+    candidates: [
+      { move: "C7", bwr: 52.2, label: "隅" },
+      { move: "G7", bwr: 52.0, label: "隅" },
+      { move: "C3", bwr: 51.5, label: "隅" },
+    ],
+    comment: "白がE3（辺）に打った場合。やや珍しい手。黒は隅を取りに行く。"
+  },
+  "E5-E7": {
+    candidates: [
+      { move: "G3", bwr: 52.2, label: "隅" },
+      { move: "C3", bwr: 52.0, label: "隅" },
+      { move: "G7", bwr: 51.5, label: "隅" },
+    ],
+    comment: "白E7も辺打ち。黒は隅に入る。"
+  },
+
+  // ===== 三々定石 (C3始まり) =====
+  "C3": {
+    candidates: [
+      { move: "G7", bwr: 49.2, label: "対角" },
+      { move: "E5", bwr: 48.8, label: "天元" },
+      { move: "G3", bwr: 48.5, label: "同列" },
+      { move: "C7", bwr: 48.5, label: "同列" },
+    ],
+    comment: "三々スタート。実利重視の手。白はG7（対角）かE5（天元）で応じます。天元に比べ黒の勝率がやや下がります。"
+  },
+  "C3-G7": {
+    candidates: [
+      { move: "E5", bwr: 49.8, label: "天元" },
+      { move: "G3", bwr: 49.2, label: "三々" },
+      { move: "C7", bwr: 49.0, label: "三々" },
+    ],
+    comment: "対角の三々同士。黒がE5（天元）を取れば中央の主導権を確保。"
+  },
+  "C3-E5": {
+    candidates: [
+      { move: "G7", bwr: 49.5, label: "三々" },
+      { move: "G3", bwr: 49.0, label: "三々" },
+      { move: "C7", bwr: 49.0, label: "三々" },
+    ],
+    comment: "白が天元を先取。黒は隅を確保しつつ展開。"
+  },
+  "C3-G7-E5": {
+    candidates: [
+      { move: "C7", bwr: 49.5, label: "三々" },
+      { move: "G3", bwr: 49.5, label: "三々" },
+      { move: "E3", bwr: 49.0, label: "" },
+    ],
+    comment: "黒が天元を取った。白は残りの隅に入る展開。"
+  },
+  "C3-G7-E5-C7": {
+    candidates: [
+      { move: "G3", bwr: 50.2, label: "四隅" },
+      { move: "E3", bwr: 49.8, label: "" },
+      { move: "E7", bwr: 49.5, label: "" },
+    ],
+    comment: "白C7で三隅目。黒G3で四隅分割に。"
+  },
+  "C3-G7-E5-G3": {
+    candidates: [
+      { move: "C7", bwr: 50.2, label: "四隅" },
+      { move: "E7", bwr: 49.8, label: "" },
+      { move: "E3", bwr: 49.5, label: "" },
+    ],
+    comment: "白G3の場合。黒C7で四隅分割。"
+  },
+  "C3-G7-E5-C7-G3": {
+    candidates: [
+      { move: "E7", bwr: 50.5, label: "辺" },
+      { move: "E3", bwr: 50.3, label: "辺" },
+      { move: "D5", bwr: 49.8, label: "" },
+    ],
+    comment: "四隅分割完了。白は辺に展開する。天元の黒がわずかに有利。"
+  },
+
+  // ===== G7始まり =====
+  "G7": {
+    candidates: [
+      { move: "C3", bwr: 49.2, label: "対角" },
+      { move: "E5", bwr: 48.8, label: "天元" },
+      { move: "G3", bwr: 48.5, label: "同列" },
+      { move: "C7", bwr: 48.5, label: "同列" },
+    ],
+    comment: "G7（右上三々）始まり。C3始まりのミラーで性質は同じ。"
+  },
+
+  // ===== 小目定石 (D3始まり) =====
+  "D3": {
+    candidates: [
+      { move: "F7", bwr: 48.5, label: "対角小目" },
+      { move: "G7", bwr: 48.3, label: "三々" },
+      { move: "E5", bwr: 48.0, label: "天元" },
+      { move: "G6", bwr: 47.8, label: "小目" },
+    ],
+    comment: "小目（D3）始まり。方向性が豊富。白は対角の小目やE5で対応。三々より柔軟だが勝率はやや劣る。"
+  },
+  "D3-F7": {
+    candidates: [
+      { move: "E5", bwr: 49.0, label: "天元" },
+      { move: "G3", bwr: 48.5, label: "三々" },
+      { move: "C7", bwr: 48.3, label: "三々" },
+    ],
+    comment: "互いに小目。黒がE5で中央を取ると、やや有利に。"
+  },
+
+  // ===== 天元→C3→C7 系 (同辺) =====
+  "E5-C3-C7": {
+    candidates: [
+      { move: "G3", bwr: 51.5, label: "三々" },
+      { move: "G7", bwr: 51.5, label: "三々" },
+      { move: "G5", bwr: 51.0, label: "" },
+    ],
+    comment: "白がC3-黒C7で左辺を両方取った。白はG側の隅に入る。"
+  },
+  "E5-C3-G3": {
+    candidates: [
+      { move: "G7", bwr: 52.0, label: "三々" },
+      { move: "C7", bwr: 51.8, label: "三々" },
+      { move: "F7", bwr: 51.3, label: "" },
+    ],
+    comment: "白C3に黒G3。対角ではなく隣の隅。白は残りの隅に入る。"
+  },
+
+  // ===== 天元→C3→G7→G3→C7→E3→E7→D5→F5→B7 (10手完走) =====
+  "E5-C3-G7-G3-C7-E3-E7-D5-F5-B7": {
+    candidates: [],
+    comment: "10手完了。四隅分割+辺+中央の典型的な9路盤序盤が完成しました。黒が天元と中央の挟撃で約53.5%のわずかな優位。ここからは中盤の接近戦です。"
+  },
+
+  // ===== 天元→C3→G7→C7→G3 系 =====
+  "E5-C3-G7-C7-G3": {
+    candidates: [
+      { move: "E7", bwr: 52.8, label: "辺" },
+      { move: "E3", bwr: 52.5, label: "辺" },
+      { move: "D5", bwr: 52.0, label: "" },
+    ],
+    comment: "四隅分割完了（別順序）。E5-C3-G7-G3-C7と同じ局面。"
+  },
+};
+
+// --- 描画 ---
+function boardCoord(col, row) {
+  // col: 0-8 (left to right), row: 0-8 (bottom=0 to top=8)
+  const x = MARGIN + col * CELL;
+  const y = MARGIN + (BOARD_SIZE - 1 - row) * CELL;
+  return { x, y };
+}
+
+function drawBoard() {
+  // Background
+  ctx.fillStyle = '#dcb468';
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+  // Wood grain effect
+  ctx.strokeStyle = 'rgba(160, 120, 50, 0.15)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < CANVAS_SIZE; i += 6) {
+    ctx.beginPath();
+    ctx.moveTo(0, i + Math.sin(i * 0.05) * 3);
+    ctx.lineTo(CANVAS_SIZE, i + Math.sin(i * 0.05 + 2) * 3);
+    ctx.stroke();
+  }
+
+  // Grid lines
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < BOARD_SIZE; i++) {
+    const { x: x0, y: y0 } = boardCoord(i, 0);
+    const { x: x1, y: y1 } = boardCoord(i, 8);
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+
+    const { x: xa, y: ya } = boardCoord(0, i);
+    const { x: xb, y: yb } = boardCoord(8, i);
+    ctx.beginPath(); ctx.moveTo(xa, ya); ctx.lineTo(xb, yb); ctx.stroke();
+  }
+
+  // Star points (天元 + 四星)
+  const stars = [[4,4], [2,2], [6,6], [2,6], [6,2]];
+  for (const [c, r] of stars) {
+    const { x, y } = boardCoord(c, r);
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#333';
+    ctx.fill();
+  }
+
+  // Coordinate labels
+  ctx.fillStyle = '#8B7355';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < BOARD_SIZE; i++) {
+    // Column labels (top and bottom)
+    const { x } = boardCoord(i, 0);
+    ctx.fillText(COL_LABELS[i], x, CANVAS_SIZE - 5);
+    ctx.fillText(COL_LABELS[i], x, 8);
+    // Row labels (left and right)
+    const { y } = boardCoord(0, i);
+    ctx.fillText(String(i + 1), 6, y);
+    ctx.fillText(String(i + 1), CANVAS_SIZE - 8, y);
+  }
+}
+
+function drawStone(col, row, color, label) {
+  const { x, y } = boardCoord(col, row);
+  const r = CELL * 0.44;
+
+  // Shadow
+  ctx.beginPath();
+  ctx.arc(x + 2, y + 2, r, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fill();
+
+  // Stone
+  const grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+  if (color === 'black') {
+    grad.addColorStop(0, '#555');
+    grad.addColorStop(1, '#111');
+  } else {
+    grad.addColorStop(0, '#fff');
+    grad.addColorStop(1, '#ccc');
+  }
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = color === 'black' ? '#000' : '#999';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // Number label
+  if (label !== undefined) {
+    ctx.fillStyle = color === 'black' ? '#fff' : '#333';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(label), x, y);
+  }
+}
+
+function getCandidateColor(bwr, bestBwr) {
+  const diff = bestBwr - bwr;
+  if (diff < 0.3) return '#4caf50';      // 最善
+  if (diff < 1.0) return '#8bc34a';      // 好手
+  if (diff < 2.0) return '#ffeb3b';      // 普通
+  return '#ff9800';                       // やや損
+}
+
+function drawCandidate(col, row, bwr, bestBwr, rank) {
+  const { x, y } = boardCoord(col, row);
+  const r = CELL * 0.38;
+  const color = getCandidateColor(bwr, bestBwr);
+
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = color + '55';
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Win rate text
+  ctx.fillStyle = '#000';
+  ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(bwr.toFixed(1) + '%', x, y);
+}
+
+// --- Move notation ---
+function moveToColRow(move) {
+  const col = COL_LABELS.indexOf(move[0]);
+  const row = parseInt(move.substring(1)) - 1;
+  return { col, row };
+}
+
+function colRowToMove(col, row) {
+  return COL_LABELS[col] + String(row + 1);
+}
+
+// --- Current board state ---
+function getCurrentKey() {
+  return moveHistory.slice(0, currentMoveIndex).map(m => m.move).join('-');
+}
+
+function getCurrentCandidates() {
+  const key = getCurrentKey();
+  return JOSEKI[key] || null;
+}
+
+function getNextColor() {
+  return currentMoveIndex % 2 === 0 ? 'black' : 'white';
+}
+
+// --- Render ---
+function render() {
+  drawBoard();
+
+  // Draw stones
+  for (let i = 0; i < currentMoveIndex; i++) {
+    const m = moveHistory[i];
+    drawStone(m.col, m.row, m.color, i + 1);
+  }
+
+  // Draw candidates
+  const data = getCurrentCandidates();
+  if (data && data.candidates.length > 0) {
+    const bestBwr = data.candidates[0].bwr;
+    data.candidates.forEach((c, idx) => {
+      const { col, row } = moveToColRow(c.move);
+      // Check if this position is already occupied
+      const occupied = moveHistory.slice(0, currentMoveIndex).some(m => m.col === col && m.row === row);
+      if (!occupied) {
+        drawCandidate(col, row, c.bwr, bestBwr, idx + 1);
+      }
+    });
+  }
+
+  updateUI(data);
+}
+
+function updateUI(data) {
+  // Turn
+  const color = getNextColor();
+  const turnStone = document.getElementById('turnStone');
+  turnStone.className = 'turn-stone ' + color;
+  document.getElementById('turnText').textContent =
+    (color === 'black' ? '黒' : '白') + 'の手番（' + (currentMoveIndex + 1) + '手目）';
+
+  // Win rate bar
+  let bwr = 50.0;
+  if (data && data.candidates.length > 0) {
+    bwr = data.candidates[0].bwr;
+  } else if (currentMoveIndex > 0) {
+    // Use parent's best candidate rate
+    const parentKey = moveHistory.slice(0, currentMoveIndex - 1).map(m => m.move).join('-');
+    const parentData = JOSEKI[parentKey];
+    if (parentData) {
+      const lastMove = moveHistory[currentMoveIndex - 1].move;
+      const found = parentData.candidates.find(c => c.move === lastMove);
+      if (found) bwr = found.bwr;
+    }
+  }
+  const wrBlack = document.getElementById('wrBlack');
+  const wrWhite = document.getElementById('wrWhite');
+  wrBlack.style.width = bwr + '%';
+  wrBlack.textContent = '黒 ' + bwr.toFixed(1) + '%';
+  wrWhite.style.width = (100 - bwr) + '%';
+  wrWhite.textContent = '白 ' + (100 - bwr).toFixed(1) + '%';
+
+  // Candidates list
+  const list = document.getElementById('candidateList');
+  const noCand = document.getElementById('noCandidates');
+  list.innerHTML = '';
+
+  if (data && data.candidates.length > 0) {
+    noCand.style.display = 'none';
+    const bestBwr = data.candidates[0].bwr;
+    data.candidates.forEach((c, idx) => {
+      const li = document.createElement('li');
+      li.onclick = () => playMove(c.move);
+
+      const rankEl = document.createElement('div');
+      rankEl.className = 'rank';
+      rankEl.style.background = getCandidateColor(c.bwr, bestBwr);
+      rankEl.textContent = idx + 1;
+
+      const moveName = document.createElement('span');
+      moveName.className = 'move-name';
+      moveName.textContent = c.move;
+
+      const barWrap = document.createElement('div');
+      barWrap.className = 'rate-bar-wrap';
+      const bar = document.createElement('div');
+      bar.className = 'rate-bar';
+      bar.style.width = ((c.bwr - 45) / 10 * 100) + '%';
+      bar.style.background = getCandidateColor(c.bwr, bestBwr);
+      barWrap.appendChild(bar);
+
+      const rateVal = document.createElement('span');
+      rateVal.className = 'rate-val';
+      rateVal.textContent = c.bwr.toFixed(1) + '%';
+
+      const labelEl = document.createElement('span');
+      labelEl.className = 'label-text';
+      labelEl.textContent = c.label || '';
+
+      li.appendChild(rankEl);
+      li.appendChild(moveName);
+      li.appendChild(barWrap);
+      li.appendChild(rateVal);
+      li.appendChild(labelEl);
+      list.appendChild(li);
+    });
+  } else {
+    noCand.style.display = 'block';
+  }
+
+  // Comment
+  document.getElementById('commentText').textContent =
+    (data && data.comment) ? data.comment : 'この局面のデータはありません。「戻る」で前の局面に戻れます。';
+
+  // Move history
+  const histEl = document.getElementById('moveHistory');
+  histEl.innerHTML = '';
+  moveHistory.forEach((m, i) => {
+    const span = document.createElement('span');
+    span.className = (m.color === 'black' ? 'black-move' : 'white-move') +
+                     (i === currentMoveIndex - 1 ? ' current' : '');
+    span.textContent = (i + 1) + '.' + m.move;
+    span.onclick = () => goToMove(i + 1);
+    if (i >= currentMoveIndex) span.style.opacity = '0.4';
+    histEl.appendChild(span);
+  });
+
+  // Button states
+  document.getElementById('btnBack').disabled = currentMoveIndex === 0;
+  document.getElementById('btnForward').disabled = currentMoveIndex >= moveHistory.length;
+  document.getElementById('btnStart').disabled = currentMoveIndex === 0;
+}
+
+// --- Actions ---
+function playMove(moveStr) {
+  const { col, row } = moveToColRow(moveStr);
+  const color = getNextColor();
+
+  // Truncate future moves if we diverged
+  moveHistory = moveHistory.slice(0, currentMoveIndex);
+
+  moveHistory.push({ move: moveStr, col, row, color });
+  currentMoveIndex++;
+  render();
+}
+
+function goBack() {
+  if (currentMoveIndex > 0) {
+    currentMoveIndex--;
+    render();
+  }
+}
+
+function goForward() {
+  if (currentMoveIndex < moveHistory.length) {
+    currentMoveIndex++;
+    render();
+  }
+}
+
+function goToMove(n) {
+  currentMoveIndex = Math.max(0, Math.min(n, moveHistory.length));
+  render();
+}
+
+function doPass() {
+  playMove('PASS');
+}
+
+function resetBoard() {
+  moveHistory = [];
+  currentMoveIndex = 0;
+  render();
+}
+
+// --- Click handler ---
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_SIZE / rect.width;
+  const scaleY = CANVAS_SIZE / rect.height;
+  const mx = (e.clientX - rect.left) * scaleX;
+  const my = (e.clientY - rect.top) * scaleY;
+
+  // Find closest intersection
+  let bestDist = Infinity;
+  let bestCol = -1, bestRow = -1;
+  for (let c = 0; c < BOARD_SIZE; c++) {
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      const { x, y } = boardCoord(c, r);
+      const dist = Math.sqrt((mx - x) ** 2 + (my - y) ** 2);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestCol = c;
+        bestRow = r;
+      }
+    }
+  }
+
+  if (bestDist > CELL * 0.5) return; // Too far from any intersection
+
+  // Check if occupied
+  const occupied = moveHistory.slice(0, currentMoveIndex).some(m => m.col === bestCol && m.row === bestRow);
+  if (occupied) return;
+
+  const moveStr = colRowToMove(bestCol, bestRow);
+
+  // Check if this is a candidate move (allow clicking even non-candidates)
+  playMove(moveStr);
+});
+
+// --- Initialize ---
+render();
+</script>
+
+</body>
+</html>
