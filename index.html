@@ -335,7 +335,9 @@ let currentMoveIndex = 0; // how many moves are on the board
 // Each entry has candidates: [{move, blackWinRate, label?}] and comment
 // blackWinRate is always from black's perspective
 const JOSEKI = {
-  // ===== 初手（黒番）=====
+  // =============================================================
+  // 初手（黒番）
+  // =============================================================
   "": {
     candidates: [
       { move: "E5", bwr: 52.1, label: "天元" },
@@ -345,13 +347,15 @@ const JOSEKI = {
       { move: "C7", bwr: 49.3, label: "三々" },
       { move: "D3", bwr: 48.9, label: "小目" },
       { move: "F7", bwr: 48.9, label: "小目" },
-      { move: "E3", bwr: 48.5, label: "" },
-      { move: "E7", bwr: 48.5, label: "" },
+      { move: "D7", bwr: 48.7, label: "小目" },
+      { move: "F3", bwr: 48.7, label: "小目" },
     ],
-    comment: "9路盤の初手。天元（E5）が最も勝率が高く、プロ・AIともに最多の選択です。三々（隅）も有力ですが、天元に比べるとやや勝率が落ちます。"
+    comment: "9路盤の初手。天元（E5）が最も勝率が高く、プロ・AIともに最多の選択です。三々（隅）も有力で実利重視。小目は方向性が豊富ですが勝率はやや劣ります。"
   },
 
-  // ===== 天元定石 =====
+  // =============================================================
+  // ■ 天元定石 (E5)
+  // =============================================================
   "E5": {
     candidates: [
       { move: "C3", bwr: 51.8, label: "三々" },
@@ -360,11 +364,13 @@ const JOSEKI = {
       { move: "C7", bwr: 51.5, label: "三々" },
       { move: "D3", bwr: 51.2, label: "小目" },
       { move: "F7", bwr: 51.2, label: "小目" },
-      { move: "E3", bwr: 50.8, label: "" },
-      { move: "E7", bwr: 50.8, label: "" },
+      { move: "E3", bwr: 50.8, label: "辺" },
+      { move: "E7", bwr: 50.8, label: "辺" },
     ],
-    comment: "天元の後、白は隅（三々）に打つのが最善。C3やG7が最多。中央を先に取られたため、隅の実利で対抗します。"
+    comment: "天元の後、白は隅（三々）に打つのが最善。中央を先に取られたため、隅の実利で対抗するのが最も効率的です。三々以外の手は勝率が下がります。"
   },
+
+  // --- E5-C3 系 ---
   "E5-C3": {
     candidates: [
       { move: "G7", bwr: 52.5, label: "対角" },
@@ -375,72 +381,53 @@ const JOSEKI = {
     ],
     comment: "白がC3に入ったら、黒は対角のG7が最善。隅を分け合いつつ天元の影響力を活かします。"
   },
-  "E5-G7": {
-    candidates: [
-      { move: "C3", bwr: 52.5, label: "対角" },
-      { move: "C7", bwr: 52.0, label: "" },
-      { move: "G3", bwr: 51.8, label: "" },
-      { move: "D3", bwr: 51.3, label: "小目" },
-    ],
-    comment: "白がG7に入った場合。黒はC3で対角を取るのが最善です。"
-  },
-  "E5-C7": {
-    candidates: [
-      { move: "G3", bwr: 52.3, label: "対角" },
-      { move: "G7", bwr: 51.8, label: "" },
-      { move: "C3", bwr: 51.6, label: "" },
-    ],
-    comment: "白C7への対応。対角のG3が好手。"
-  },
-  "E5-G3": {
-    candidates: [
-      { move: "C7", bwr: 52.3, label: "対角" },
-      { move: "C3", bwr: 51.8, label: "" },
-      { move: "G7", bwr: 51.6, label: "" },
-    ],
-    comment: "白G3への対応。対角のC7が好手。"
-  },
-
-  // --- 天元→C3→G7 系 (メインライン) ---
   "E5-C3-G7": {
     candidates: [
       { move: "G3", bwr: 52.2, label: "三々" },
       { move: "C7", bwr: 52.0, label: "三々" },
-      { move: "E3", bwr: 51.5, label: "" },
-      { move: "E7", bwr: 51.5, label: "" },
+      { move: "E3", bwr: 51.5, label: "辺" },
+      { move: "E7", bwr: 51.5, label: "辺" },
       { move: "D7", bwr: 51.0, label: "" },
     ],
-    comment: "黒が対角を取った後、白はG3かC7で残りの隅に入ります。四隅を分け合う展開に。"
+    comment: "黒が対角を取った後、白はG3かC7で残りの隅に入ります。四隅分割の展開へ。"
   },
   "E5-C3-G7-G3": {
     candidates: [
-      { move: "C7", bwr: 53.0, label: "四隅分割" },
+      { move: "C7", bwr: 53.0, label: "四隅" },
       { move: "E7", bwr: 52.2, label: "" },
       { move: "D7", bwr: 51.8, label: "" },
       { move: "E3", bwr: 51.5, label: "" },
     ],
-    comment: "白がG3に来たら、黒はC7で最後の隅を取る。四隅分割形。天元の黒が中央の主導権を握り、わずかに有利。"
+    comment: "白G3に黒C7で最後の隅を取る。四隅分割形。天元の黒が中央の主導権を握りわずかに有利。"
   },
   "E5-C3-G7-C7": {
     candidates: [
-      { move: "G3", bwr: 53.0, label: "四隅分割" },
+      { move: "G3", bwr: 53.0, label: "四隅" },
       { move: "E3", bwr: 52.2, label: "" },
       { move: "F3", bwr: 51.8, label: "" },
     ],
     comment: "白C7の場合はG3で四隅分割。天元の影響力が大きい。"
   },
+  "E5-C3-G7-E3": {
+    candidates: [
+      { move: "C7", bwr: 52.8, label: "隅" },
+      { move: "G3", bwr: 52.5, label: "隅" },
+      { move: "E7", bwr: 52.0, label: "" },
+    ],
+    comment: "白E3と辺に打つのは珍しい。黒は空いている隅を確保。"
+  },
   "E5-C3-G7-G3-C7": {
     candidates: [
       { move: "E3", bwr: 52.8, label: "辺" },
       { move: "E7", bwr: 52.5, label: "辺" },
-      { move: "D5", bwr: 52.0, label: "" },
-      { move: "F5", bwr: 52.0, label: "" },
+      { move: "D5", bwr: 52.0, label: "中央" },
+      { move: "F5", bwr: 52.0, label: "中央" },
     ],
-    comment: "四隅分割完了。白は辺（E3やE7）に展開。中央の天元を巡る攻防が本格化します。"
+    comment: "四隅分割完了。白は辺（E3/E7）に展開するのが自然。中央の天元を巡る攻防が本格化します。"
   },
   "E5-C3-G7-G3-C7-E3": {
     candidates: [
-      { move: "E7", bwr: 53.5, label: "辺バランス" },
+      { move: "E7", bwr: 53.5, label: "辺対応" },
       { move: "D7", bwr: 53.0, label: "" },
       { move: "F7", bwr: 52.8, label: "" },
       { move: "D5", bwr: 52.2, label: "" },
@@ -449,20 +436,28 @@ const JOSEKI = {
   },
   "E5-C3-G7-G3-C7-E7": {
     candidates: [
-      { move: "E3", bwr: 53.5, label: "辺バランス" },
+      { move: "E3", bwr: 53.5, label: "辺対応" },
       { move: "F3", bwr: 53.0, label: "" },
       { move: "D3", bwr: 52.8, label: "" },
     ],
     comment: "白E7の場合はE3で下辺に展開。"
   },
+  "E5-C3-G7-G3-C7-D5": {
+    candidates: [
+      { move: "F5", bwr: 52.8, label: "挟撃" },
+      { move: "E7", bwr: 52.5, label: "" },
+      { move: "E3", bwr: 52.2, label: "" },
+    ],
+    comment: "白が直接D5で天元に迫る積極策。黒F5で挟み撃ちに。"
+  },
   "E5-C3-G7-G3-C7-E3-E7": {
     candidates: [
-      { move: "D5", bwr: 53.2, label: "中央接近" },
-      { move: "F5", bwr: 53.0, label: "中央接近" },
-      { move: "B7", bwr: 52.5, label: "" },
-      { move: "H3", bwr: 52.5, label: "" },
+      { move: "D5", bwr: 53.2, label: "接近" },
+      { move: "F5", bwr: 53.0, label: "接近" },
+      { move: "B7", bwr: 52.5, label: "隅拡大" },
+      { move: "H3", bwr: 52.5, label: "隅拡大" },
     ],
-    comment: "9手目。白は天元周辺（D5/F5）に接近して中央の黒の影響力を削ぎに行くか、隅の地を広げるか。重要な分岐点。"
+    comment: "8手目。白は天元周辺（D5/F5）に接近して中央の影響力を削ぐか、隅の地を広げるか。重要な分岐点。"
   },
   "E5-C3-G7-G3-C7-E3-E7-D5": {
     candidates: [
@@ -480,33 +475,223 @@ const JOSEKI = {
     ],
     comment: "白F5の接近に黒D5で挟む。"
   },
+  "E5-C3-G7-G3-C7-E3-E7-B7": {
+    candidates: [
+      { move: "H3", bwr: 53.0, label: "隅拡大" },
+      { move: "D5", bwr: 52.8, label: "" },
+      { move: "F5", bwr: 52.5, label: "" },
+    ],
+    comment: "白B7で隅を広げる手。黒もH3で対称に広げる。"
+  },
   "E5-C3-G7-G3-C7-E3-E7-D5-F5": {
     candidates: [
       { move: "B7", bwr: 53.5, label: "隅拡大" },
       { move: "H3", bwr: 53.3, label: "隅拡大" },
       { move: "D7", bwr: 53.0, label: "" },
     ],
-    comment: "10手目。白は隅の地を広げてバランスを保つ。ここからは中盤の戦いへ。"
+    comment: "10手目。白は隅の地を広げてバランスを保つ。ここからは中盤の接近戦です。"
+  },
+  "E5-C3-G7-G3-C7-E3-E7-D5-F5-B7": {
+    candidates: [
+      { move: "H7", bwr: 53.8, label: "右上拡大" },
+      { move: "D7", bwr: 53.5, label: "" },
+      { move: "F3", bwr: 53.2, label: "" },
+    ],
+    comment: "黒11手目。G7の隅を広げるH7が好手。序盤の骨格がほぼ完成。"
+  },
+  "E5-C3-G7-G3-C7-E3-E7-D5-F5-H3": {
+    candidates: [
+      { move: "B3", bwr: 53.8, label: "左下拡大" },
+      { move: "D7", bwr: 53.5, label: "" },
+      { move: "F7", bwr: 53.2, label: "" },
+    ],
+    comment: "白H3の場合。黒B3でC3方面の隅を広げる。"
   },
 
-  // --- 天元→G7→C3 系 (ミラー) ---
+  // --- E5-C3-G7-C7-G3 系 (四隅別順) ---
+  "E5-C3-G7-C7": {
+    candidates: [
+      { move: "G3", bwr: 53.0, label: "四隅" },
+      { move: "E3", bwr: 52.2, label: "" },
+      { move: "F3", bwr: 51.8, label: "" },
+    ],
+    comment: "白C7の場合はG3で四隅分割。天元の影響力が大きい。"
+  },
+  "E5-C3-G7-C7-G3": {
+    candidates: [
+      { move: "E7", bwr: 52.8, label: "辺" },
+      { move: "E3", bwr: 52.5, label: "辺" },
+      { move: "D5", bwr: 52.0, label: "" },
+    ],
+    comment: "四隅分割完了（C7-G3の順）。白は辺に展開。"
+  },
+  "E5-C3-G7-C7-G3-E7": {
+    candidates: [
+      { move: "E3", bwr: 53.5, label: "辺対応" },
+      { move: "D5", bwr: 53.0, label: "" },
+      { move: "F5", bwr: 52.8, label: "" },
+    ],
+    comment: "白E7に黒E3で対称形。"
+  },
+  "E5-C3-G7-C7-G3-E3": {
+    candidates: [
+      { move: "E7", bwr: 53.5, label: "辺対応" },
+      { move: "D5", bwr: 53.0, label: "" },
+      { move: "F5", bwr: 52.8, label: "" },
+    ],
+    comment: "白E3に黒E7で対称形。"
+  },
+
+  // --- E5-C3 黒が隅以外に打つ変化 ---
+  "E5-C3-C7": {
+    candidates: [
+      { move: "G3", bwr: 51.5, label: "三々" },
+      { move: "G7", bwr: 51.5, label: "三々" },
+      { move: "G5", bwr: 51.0, label: "" },
+    ],
+    comment: "黒C7で左辺の隅を両方確保。白はG側の隅に入る。"
+  },
+  "E5-C3-G3": {
+    candidates: [
+      { move: "G7", bwr: 52.0, label: "三々" },
+      { move: "C7", bwr: 51.8, label: "三々" },
+      { move: "F7", bwr: 51.3, label: "" },
+    ],
+    comment: "黒G3で右下を確保。白は残りの隅に。"
+  },
+
+  // --- E5-G7 系 ---
+  "E5-G7": {
+    candidates: [
+      { move: "C3", bwr: 52.5, label: "対角" },
+      { move: "C7", bwr: 52.0, label: "" },
+      { move: "G3", bwr: 51.8, label: "" },
+      { move: "D3", bwr: 51.3, label: "小目" },
+    ],
+    comment: "白G7に黒C3で対角。E5-C3のミラー。"
+  },
   "E5-G7-C3": {
     candidates: [
       { move: "G3", bwr: 52.2, label: "三々" },
       { move: "C7", bwr: 52.0, label: "三々" },
       { move: "E3", bwr: 51.5, label: "" },
     ],
-    comment: "G7-C3の順でも、局面は E5-C3-G7 と実質同じ。候補手も同様です。"
+    comment: "G7-C3の順でも四隅分割を目指す展開は同じ。"
+  },
+  "E5-G7-C3-C7": {
+    candidates: [
+      { move: "G3", bwr: 53.0, label: "四隅" },
+      { move: "E3", bwr: 52.2, label: "" },
+    ],
+    comment: "白C7に黒G3で四隅分割。"
+  },
+  "E5-G7-C3-G3": {
+    candidates: [
+      { move: "C7", bwr: 53.0, label: "四隅" },
+      { move: "E3", bwr: 52.2, label: "" },
+    ],
+    comment: "白G3に黒C7で四隅分割。"
   },
 
-  // --- 天元→E3 系 (辺打ち) ---
+  // --- E5-C7 系 ---
+  "E5-C7": {
+    candidates: [
+      { move: "G3", bwr: 52.3, label: "対角" },
+      { move: "G7", bwr: 51.8, label: "" },
+      { move: "C3", bwr: 51.6, label: "" },
+    ],
+    comment: "白C7への対応。対角のG3が好手。"
+  },
+  "E5-C7-G3": {
+    candidates: [
+      { move: "G7", bwr: 52.0, label: "三々" },
+      { move: "C3", bwr: 51.8, label: "三々" },
+      { move: "E7", bwr: 51.3, label: "" },
+    ],
+    comment: "黒G3で対角確保。白は残りの隅へ。"
+  },
+  "E5-C7-G3-G7": {
+    candidates: [
+      { move: "C3", bwr: 53.0, label: "四隅" },
+      { move: "E3", bwr: 52.2, label: "" },
+    ],
+    comment: "白G7に黒C3で四隅分割。"
+  },
+  "E5-C7-G3-C3": {
+    candidates: [
+      { move: "G7", bwr: 53.0, label: "四隅" },
+      { move: "E7", bwr: 52.2, label: "" },
+    ],
+    comment: "白C3に黒G7で四隅分割。"
+  },
+
+  // --- E5-G3 系 ---
+  "E5-G3": {
+    candidates: [
+      { move: "C7", bwr: 52.3, label: "対角" },
+      { move: "C3", bwr: 51.8, label: "" },
+      { move: "G7", bwr: 51.6, label: "" },
+    ],
+    comment: "白G3への対応。対角のC7が好手。"
+  },
+  "E5-G3-C7": {
+    candidates: [
+      { move: "C3", bwr: 52.0, label: "三々" },
+      { move: "G7", bwr: 51.8, label: "三々" },
+      { move: "E7", bwr: 51.3, label: "" },
+    ],
+    comment: "黒C7で対角確保。白は残りの隅へ。"
+  },
+  "E5-G3-C7-C3": {
+    candidates: [
+      { move: "G7", bwr: 53.0, label: "四隅" },
+      { move: "E7", bwr: 52.2, label: "" },
+    ],
+    comment: "白C3に黒G7で四隅分割。"
+  },
+  "E5-G3-C7-G7": {
+    candidates: [
+      { move: "C3", bwr: 53.0, label: "四隅" },
+      { move: "E3", bwr: 52.2, label: "" },
+    ],
+    comment: "白G7に黒C3で四隅分割。"
+  },
+
+  // --- E5-D3 系 (白小目応手) ---
+  "E5-D3": {
+    candidates: [
+      { move: "G7", bwr: 52.0, label: "三々" },
+      { move: "F7", bwr: 51.8, label: "小目" },
+      { move: "G3", bwr: 51.5, label: "" },
+      { move: "C7", bwr: 51.3, label: "" },
+    ],
+    comment: "白が小目(D3)で応じた。黒はG7で隅を確保するのが自然。"
+  },
+  "E5-D3-G7": {
+    candidates: [
+      { move: "C7", bwr: 51.8, label: "三々" },
+      { move: "G3", bwr: 51.5, label: "三々" },
+      { move: "F3", bwr: 51.2, label: "" },
+    ],
+    comment: "白はC7かG3で別の隅に入る。"
+  },
+
+  // --- E5-E3 系 (白辺打ち) ---
   "E5-E3": {
     candidates: [
       { move: "C7", bwr: 52.2, label: "隅" },
       { move: "G7", bwr: 52.0, label: "隅" },
       { move: "C3", bwr: 51.5, label: "隅" },
     ],
-    comment: "白がE3（辺）に打った場合。やや珍しい手。黒は隅を取りに行く。"
+    comment: "白E3（辺）は珍しい手。隅を確保する効率で劣るため黒有利。黒は隅を取りに行く。"
+  },
+  "E5-E3-C7": {
+    candidates: [
+      { move: "G7", bwr: 52.0, label: "三々" },
+      { move: "G3", bwr: 51.8, label: "三々" },
+      { move: "C3", bwr: 51.5, label: "" },
+    ],
+    comment: "黒C7に白は別の隅に入る。"
   },
   "E5-E7": {
     candidates: [
@@ -517,39 +702,37 @@ const JOSEKI = {
     comment: "白E7も辺打ち。黒は隅に入る。"
   },
 
-  // ===== 三々定石 (C3始まり) =====
+  // =============================================================
+  // ■ 三々定石 (C3始まり)
+  // =============================================================
   "C3": {
     candidates: [
       { move: "G7", bwr: 49.2, label: "対角" },
       { move: "E5", bwr: 48.8, label: "天元" },
       { move: "G3", bwr: 48.5, label: "同列" },
       { move: "C7", bwr: 48.5, label: "同列" },
+      { move: "F7", bwr: 48.2, label: "小目" },
     ],
-    comment: "三々スタート。実利重視の手。白はG7（対角）かE5（天元）で応じます。天元に比べ黒の勝率がやや下がります。"
+    comment: "三々（C3）スタート。実利重視の堅実な手。白はG7（対角）が最善で、天元を取るのも有力。天元に比べ黒の勝率が約2.5%低いのがポイント。"
   },
+  // --- C3-G7 系 (対角三々) ---
   "C3-G7": {
     candidates: [
       { move: "E5", bwr: 49.8, label: "天元" },
       { move: "G3", bwr: 49.2, label: "三々" },
       { move: "C7", bwr: 49.0, label: "三々" },
+      { move: "F3", bwr: 48.5, label: "" },
     ],
-    comment: "対角の三々同士。黒がE5（天元）を取れば中央の主導権を確保。"
-  },
-  "C3-E5": {
-    candidates: [
-      { move: "G7", bwr: 49.5, label: "三々" },
-      { move: "G3", bwr: 49.0, label: "三々" },
-      { move: "C7", bwr: 49.0, label: "三々" },
-    ],
-    comment: "白が天元を先取。黒は隅を確保しつつ展開。"
+    comment: "対角の三々同士。黒E5（天元）を取れば中央の主導権を確保でき最善。"
   },
   "C3-G7-E5": {
     candidates: [
       { move: "C7", bwr: 49.5, label: "三々" },
       { move: "G3", bwr: 49.5, label: "三々" },
       { move: "E3", bwr: 49.0, label: "" },
+      { move: "E7", bwr: 49.0, label: "" },
     ],
-    comment: "黒が天元を取った。白は残りの隅に入る展開。"
+    comment: "黒が天元を取った。白は残りの隅（C7/G3）に入る。"
   },
   "C3-G7-E5-C7": {
     candidates: [
@@ -573,71 +756,472 @@ const JOSEKI = {
       { move: "E3", bwr: 50.3, label: "辺" },
       { move: "D5", bwr: 49.8, label: "" },
     ],
-    comment: "四隅分割完了。白は辺に展開する。天元の黒がわずかに有利。"
+    comment: "四隅分割完了。白は辺に展開。天元の黒がわずかに有利。"
+  },
+  "C3-G7-E5-C7-G3-E7": {
+    candidates: [
+      { move: "E3", bwr: 51.0, label: "辺対応" },
+      { move: "D5", bwr: 50.5, label: "" },
+      { move: "F5", bwr: 50.3, label: "" },
+    ],
+    comment: "白E7に黒E3で対称形。バランスの取れた進行。"
+  },
+  "C3-G7-E5-C7-G3-E3": {
+    candidates: [
+      { move: "E7", bwr: 51.0, label: "辺対応" },
+      { move: "D5", bwr: 50.5, label: "" },
+    ],
+    comment: "白E3に黒E7で対称形。"
+  },
+  "C3-G7-E5-C7-G3-E7-E3": {
+    candidates: [
+      { move: "D5", bwr: 50.8, label: "接近" },
+      { move: "F5", bwr: 50.6, label: "接近" },
+      { move: "B3", bwr: 50.2, label: "隅拡大" },
+      { move: "H7", bwr: 50.2, label: "隅拡大" },
+    ],
+    comment: "8手目。白は天元に接近するか隅を広げるか。天元争奪戦。"
+  },
+  "C3-G7-E5-C7-G3-E7-E3-D5": {
+    candidates: [
+      { move: "F5", bwr: 51.2, label: "挟撃" },
+      { move: "B3", bwr: 50.8, label: "" },
+      { move: "H7", bwr: 50.5, label: "" },
+    ],
+    comment: "白D5の接近に黒F5。天元を中心に挟む形。"
+  },
+  "C3-G7-E5-C7-G3-E7-E3-D5-F5": {
+    candidates: [
+      { move: "B3", bwr: 51.0, label: "隅拡大" },
+      { move: "H7", bwr: 50.8, label: "隅拡大" },
+      { move: "D7", bwr: 50.5, label: "" },
+    ],
+    comment: "10手目。白は隅を広げて実利で対抗。序盤はほぼ互角。"
+  },
+  // --- C3-G7-G3 系 (天元を取らず隅を重視) ---
+  "C3-G7-G3": {
+    candidates: [
+      { move: "C7", bwr: 48.8, label: "三々" },
+      { move: "E5", bwr: 48.5, label: "天元" },
+      { move: "E7", bwr: 48.0, label: "" },
+    ],
+    comment: "黒G3で隅を重視。白は残りのC7を取るか、E5で天元を先取するか。"
+  },
+  "C3-G7-G3-C7": {
+    candidates: [
+      { move: "E5", bwr: 49.2, label: "天元" },
+      { move: "E3", bwr: 48.8, label: "" },
+      { move: "E7", bwr: 48.5, label: "" },
+    ],
+    comment: "四隅分割。黒がE5を取れれば有利に。"
+  },
+  "C3-G7-G3-E5": {
+    candidates: [
+      { move: "C7", bwr: 49.0, label: "三々" },
+      { move: "E7", bwr: 48.5, label: "" },
+      { move: "E3", bwr: 48.3, label: "" },
+    ],
+    comment: "白が天元を先取。黒はC7で残りの隅を確保。"
   },
 
-  // ===== G7始まり =====
+  // --- C3-E5 系 (白天元) ---
+  "C3-E5": {
+    candidates: [
+      { move: "G7", bwr: 49.5, label: "三々" },
+      { move: "G3", bwr: 49.0, label: "三々" },
+      { move: "C7", bwr: 49.0, label: "三々" },
+      { move: "F7", bwr: 48.5, label: "小目" },
+    ],
+    comment: "白が天元を先取。黒は隅を確保しつつ展開。白に中央の影響力を取られた形。"
+  },
+  "C3-E5-G7": {
+    candidates: [
+      { move: "G3", bwr: 49.2, label: "三々" },
+      { move: "C7", bwr: 49.0, label: "三々" },
+      { move: "E3", bwr: 48.5, label: "" },
+    ],
+    comment: "黒G7で対角。白は残りの隅に。白天元が効いている。"
+  },
+  "C3-E5-G7-G3": {
+    candidates: [
+      { move: "C7", bwr: 49.5, label: "四隅" },
+      { move: "E3", bwr: 49.0, label: "" },
+    ],
+    comment: "白G3に黒C7で四隅分割。白が天元を持つため形勢はほぼ互角。"
+  },
+  "C3-E5-G7-C7": {
+    candidates: [
+      { move: "G3", bwr: 49.5, label: "四隅" },
+      { move: "E7", bwr: 49.0, label: "" },
+    ],
+    comment: "白C7に黒G3で四隅分割。"
+  },
+  "C3-E5-G7-G3-C7": {
+    candidates: [
+      { move: "E3", bwr: 49.8, label: "辺" },
+      { move: "E7", bwr: 49.5, label: "辺" },
+      { move: "D5", bwr: 49.2, label: "" },
+    ],
+    comment: "四隅分割+天元で白がわずかに有利。白は辺に展開。"
+  },
+
+  // --- C3-G3 系 (同列三々) ---
+  "C3-G3": {
+    candidates: [
+      { move: "E5", bwr: 49.0, label: "天元" },
+      { move: "G7", bwr: 48.5, label: "三々" },
+      { move: "C7", bwr: 48.3, label: "三々" },
+    ],
+    comment: "白が同列G3。黒はE5で天元を取るのが有力。"
+  },
+  "C3-G3-E5": {
+    candidates: [
+      { move: "G7", bwr: 48.8, label: "三々" },
+      { move: "C7", bwr: 48.5, label: "三々" },
+      { move: "E7", bwr: 48.2, label: "" },
+    ],
+    comment: "黒天元に白は上の隅に。"
+  },
+
+  // --- C3-C7 系 (同列三々) ---
+  "C3-C7": {
+    candidates: [
+      { move: "E5", bwr: 49.0, label: "天元" },
+      { move: "G7", bwr: 48.5, label: "三々" },
+      { move: "G3", bwr: 48.3, label: "三々" },
+    ],
+    comment: "白が同列C7。左辺を二つ分け合う形。黒は天元が有力。"
+  },
+
+  // =============================================================
+  // ■ 三々定石 (G7始まり) - C3のミラー
+  // =============================================================
   "G7": {
     candidates: [
       { move: "C3", bwr: 49.2, label: "対角" },
       { move: "E5", bwr: 48.8, label: "天元" },
       { move: "G3", bwr: 48.5, label: "同列" },
       { move: "C7", bwr: 48.5, label: "同列" },
+      { move: "D3", bwr: 48.2, label: "小目" },
     ],
-    comment: "G7（右上三々）始まり。C3始まりのミラーで性質は同じ。"
+    comment: "G7（右上三々）始まり。C3始まりのミラー。白はC3（対角）が最善。"
+  },
+  "G7-C3": {
+    candidates: [
+      { move: "E5", bwr: 49.8, label: "天元" },
+      { move: "C7", bwr: 49.2, label: "三々" },
+      { move: "G3", bwr: 49.0, label: "三々" },
+    ],
+    comment: "対角の三々同士。黒E5で天元を取るのが最善。"
+  },
+  "G7-C3-E5": {
+    candidates: [
+      { move: "G3", bwr: 49.5, label: "三々" },
+      { move: "C7", bwr: 49.5, label: "三々" },
+      { move: "E7", bwr: 49.0, label: "" },
+    ],
+    comment: "黒天元。白は残りの隅に入る。"
+  },
+  "G7-C3-E5-G3": {
+    candidates: [
+      { move: "C7", bwr: 50.2, label: "四隅" },
+      { move: "E7", bwr: 49.8, label: "" },
+    ],
+    comment: "白G3に黒C7で四隅分割。"
+  },
+  "G7-C3-E5-C7": {
+    candidates: [
+      { move: "G3", bwr: 50.2, label: "四隅" },
+      { move: "E3", bwr: 49.8, label: "" },
+    ],
+    comment: "白C7に黒G3で四隅分割。"
+  },
+  "G7-C3-E5-G3-C7": {
+    candidates: [
+      { move: "E7", bwr: 50.5, label: "辺" },
+      { move: "E3", bwr: 50.3, label: "辺" },
+    ],
+    comment: "四隅分割完了。白は辺に展開。"
+  },
+  "G7-E5": {
+    candidates: [
+      { move: "C3", bwr: 49.5, label: "三々" },
+      { move: "C7", bwr: 49.0, label: "三々" },
+      { move: "G3", bwr: 49.0, label: "三々" },
+    ],
+    comment: "白天元。黒は隅を確保。"
   },
 
-  // ===== 小目定石 (D3始まり) =====
+  // =============================================================
+  // ■ 三々定石 (G3始まり)
+  // =============================================================
+  "G3": {
+    candidates: [
+      { move: "C7", bwr: 49.2, label: "対角" },
+      { move: "E5", bwr: 48.8, label: "天元" },
+      { move: "C3", bwr: 48.5, label: "同列" },
+      { move: "G7", bwr: 48.5, label: "同列" },
+    ],
+    comment: "G3（右下三々）始まり。対角のC7が最善応手。"
+  },
+  "G3-C7": {
+    candidates: [
+      { move: "E5", bwr: 49.8, label: "天元" },
+      { move: "C3", bwr: 49.2, label: "三々" },
+      { move: "G7", bwr: 49.0, label: "三々" },
+    ],
+    comment: "対角三々。黒E5で天元が最善。"
+  },
+  "G3-C7-E5": {
+    candidates: [
+      { move: "C3", bwr: 49.5, label: "三々" },
+      { move: "G7", bwr: 49.5, label: "三々" },
+    ],
+    comment: "黒天元に白は残りの隅に。"
+  },
+  "G3-E5": {
+    candidates: [
+      { move: "C7", bwr: 49.5, label: "三々" },
+      { move: "C3", bwr: 49.0, label: "三々" },
+      { move: "G7", bwr: 49.0, label: "三々" },
+    ],
+    comment: "白天元。黒は隅を確保。"
+  },
+
+  // =============================================================
+  // ■ 三々定石 (C7始まり)
+  // =============================================================
+  "C7": {
+    candidates: [
+      { move: "G3", bwr: 49.2, label: "対角" },
+      { move: "E5", bwr: 48.8, label: "天元" },
+      { move: "C3", bwr: 48.5, label: "同列" },
+      { move: "G7", bwr: 48.5, label: "同列" },
+    ],
+    comment: "C7（左上三々）始まり。対角のG3が最善応手。"
+  },
+  "C7-G3": {
+    candidates: [
+      { move: "E5", bwr: 49.8, label: "天元" },
+      { move: "G7", bwr: 49.2, label: "三々" },
+      { move: "C3", bwr: 49.0, label: "三々" },
+    ],
+    comment: "対角三々。黒E5で天元が最善。"
+  },
+  "C7-G3-E5": {
+    candidates: [
+      { move: "G7", bwr: 49.5, label: "三々" },
+      { move: "C3", bwr: 49.5, label: "三々" },
+    ],
+    comment: "黒天元に白は残りの隅に。"
+  },
+  "C7-E5": {
+    candidates: [
+      { move: "G3", bwr: 49.5, label: "三々" },
+      { move: "G7", bwr: 49.0, label: "三々" },
+      { move: "C3", bwr: 49.0, label: "三々" },
+    ],
+    comment: "白天元。黒は隅を確保。"
+  },
+
+  // =============================================================
+  // ■ 小目定石 (D3始まり)
+  // =============================================================
   "D3": {
     candidates: [
       { move: "F7", bwr: 48.5, label: "対角小目" },
       { move: "G7", bwr: 48.3, label: "三々" },
       { move: "E5", bwr: 48.0, label: "天元" },
       { move: "G6", bwr: 47.8, label: "小目" },
+      { move: "C7", bwr: 47.5, label: "三々" },
     ],
-    comment: "小目（D3）始まり。方向性が豊富。白は対角の小目やE5で対応。三々より柔軟だが勝率はやや劣る。"
+    comment: "小目（D3）始まり。隅への方向性が豊富で柔軟。白は対角のF7が最善。三々に比べ勝率がやや劣るが、変化が多く実戦的。"
   },
   "D3-F7": {
     candidates: [
       { move: "E5", bwr: 49.0, label: "天元" },
       { move: "G3", bwr: 48.5, label: "三々" },
       { move: "C7", bwr: 48.3, label: "三々" },
+      { move: "G7", bwr: 48.0, label: "" },
     ],
-    comment: "互いに小目。黒がE5で中央を取ると、やや有利に。"
+    comment: "互いに小目。黒がE5で中央を取ると有利に。"
+  },
+  "D3-F7-E5": {
+    candidates: [
+      { move: "C7", bwr: 48.8, label: "三々" },
+      { move: "G3", bwr: 48.5, label: "三々" },
+      { move: "E7", bwr: 48.0, label: "" },
+    ],
+    comment: "黒天元。白は隅に入る。小目+天元の黒がやや有利。"
+  },
+  "D3-F7-E5-C7": {
+    candidates: [
+      { move: "G3", bwr: 49.2, label: "三々" },
+      { move: "G7", bwr: 48.8, label: "" },
+      { move: "E3", bwr: 48.5, label: "" },
+    ],
+    comment: "白C7に黒G3。四隅を確保する展開。"
+  },
+  "D3-F7-E5-G3": {
+    candidates: [
+      { move: "C7", bwr: 49.2, label: "三々" },
+      { move: "G7", bwr: 48.8, label: "" },
+      { move: "E7", bwr: 48.5, label: "" },
+    ],
+    comment: "白G3に黒C7。四隅分割へ。"
+  },
+  "D3-F7-E5-C7-G3": {
+    candidates: [
+      { move: "E7", bwr: 49.5, label: "辺" },
+      { move: "E3", bwr: 49.2, label: "辺" },
+      { move: "G7", bwr: 48.8, label: "" },
+    ],
+    comment: "四隅分割完了。白は辺に展開。"
+  },
+  "D3-F7-E5-C7-G3-E7": {
+    candidates: [
+      { move: "E3", bwr: 50.0, label: "辺対応" },
+      { move: "B3", bwr: 49.5, label: "" },
+      { move: "H7", bwr: 49.3, label: "" },
+    ],
+    comment: "白E7に黒E3で対称形。バランスの取れた中盤へ。"
+  },
+  "D3-F7-E5-C7-G3-E7-E3": {
+    candidates: [
+      { move: "D5", bwr: 49.8, label: "接近" },
+      { move: "F5", bwr: 49.5, label: "接近" },
+      { move: "B3", bwr: 49.2, label: "" },
+    ],
+    comment: "8手目。白は天元周辺に接近するか隅を広げるか。"
+  },
+  "D3-F7-E5-C7-G3-E7-E3-D5": {
+    candidates: [
+      { move: "F5", bwr: 50.2, label: "挟撃" },
+      { move: "B7", bwr: 49.8, label: "" },
+      { move: "H3", bwr: 49.5, label: "" },
+    ],
+    comment: "白D5接近に黒F5。天元を挟む形。"
+  },
+  "D3-F7-E5-C7-G3-E7-E3-D5-F5": {
+    candidates: [
+      { move: "B3", bwr: 50.0, label: "隅拡大" },
+      { move: "H7", bwr: 49.8, label: "隅拡大" },
+      { move: "B7", bwr: 49.5, label: "" },
+    ],
+    comment: "10手目。白は隅を広げてバランスを保つ。ほぼ互角の展開。"
+  },
+  // --- D3-G7 系 ---
+  "D3-G7": {
+    candidates: [
+      { move: "E5", bwr: 48.8, label: "天元" },
+      { move: "C7", bwr: 48.3, label: "三々" },
+      { move: "G3", bwr: 48.0, label: "三々" },
+    ],
+    comment: "白G7（三々）に黒はE5で天元を取るのが有力。"
+  },
+  "D3-G7-E5": {
+    candidates: [
+      { move: "C7", bwr: 48.5, label: "三々" },
+      { move: "G3", bwr: 48.3, label: "三々" },
+      { move: "C3", bwr: 48.0, label: "" },
+    ],
+    comment: "黒天元に白は残りの隅に。"
+  },
+  // --- D3-E5 系 ---
+  "D3-E5": {
+    candidates: [
+      { move: "G7", bwr: 48.5, label: "三々" },
+      { move: "F7", bwr: 48.2, label: "小目" },
+      { move: "C7", bwr: 48.0, label: "三々" },
+    ],
+    comment: "白天元。黒は隅を確保。白中央が強力。"
   },
 
-  // ===== 天元→C3→C7 系 (同辺) =====
-  "E5-C3-C7": {
+  // =============================================================
+  // ■ 小目定石 (F7始まり)
+  // =============================================================
+  "F7": {
     candidates: [
-      { move: "G3", bwr: 51.5, label: "三々" },
-      { move: "G7", bwr: 51.5, label: "三々" },
-      { move: "G5", bwr: 51.0, label: "" },
+      { move: "D3", bwr: 48.5, label: "対角小目" },
+      { move: "C3", bwr: 48.3, label: "三々" },
+      { move: "E5", bwr: 48.0, label: "天元" },
+      { move: "C7", bwr: 47.8, label: "三々" },
+      { move: "G3", bwr: 47.5, label: "三々" },
     ],
-    comment: "白がC3-黒C7で左辺を両方取った。白はG側の隅に入る。"
+    comment: "小目（F7）始まり。D3始まりのミラー。白は対角のD3が最善。"
   },
-  "E5-C3-G3": {
+  "F7-D3": {
     candidates: [
-      { move: "G7", bwr: 52.0, label: "三々" },
-      { move: "C7", bwr: 51.8, label: "三々" },
-      { move: "F7", bwr: 51.3, label: "" },
+      { move: "E5", bwr: 49.0, label: "天元" },
+      { move: "C7", bwr: 48.5, label: "三々" },
+      { move: "G3", bwr: 48.3, label: "三々" },
     ],
-    comment: "白C3に黒G3。対角ではなく隣の隅。白は残りの隅に入る。"
+    comment: "互いに小目。黒E5で天元を取るのが有力。"
+  },
+  "F7-D3-E5": {
+    candidates: [
+      { move: "G3", bwr: 48.8, label: "三々" },
+      { move: "C7", bwr: 48.5, label: "三々" },
+    ],
+    comment: "黒天元。白は隅に入る。"
+  },
+  "F7-E5": {
+    candidates: [
+      { move: "D3", bwr: 48.5, label: "小目" },
+      { move: "C3", bwr: 48.2, label: "三々" },
+      { move: "G3", bwr: 48.0, label: "三々" },
+    ],
+    comment: "白天元に黒は隅を確保。"
+  },
+  "F7-C3": {
+    candidates: [
+      { move: "E5", bwr: 48.8, label: "天元" },
+      { move: "D3", bwr: 48.3, label: "小目" },
+      { move: "G3", bwr: 48.0, label: "三々" },
+    ],
+    comment: "白C3（三々）。黒はE5で天元を目指す。"
   },
 
-  // ===== 天元→C3→G7→G3→C7→E3→E7→D5→F5→B7 (10手完走) =====
-  "E5-C3-G7-G3-C7-E3-E7-D5-F5-B7": {
-    candidates: [],
-    comment: "10手完了。四隅分割+辺+中央の典型的な9路盤序盤が完成しました。黒が天元と中央の挟撃で約53.5%のわずかな優位。ここからは中盤の接近戦です。"
+  // =============================================================
+  // ■ 小目定石 (D7始まり)
+  // =============================================================
+  "D7": {
+    candidates: [
+      { move: "F3", bwr: 48.3, label: "対角小目" },
+      { move: "G3", bwr: 48.1, label: "三々" },
+      { move: "E5", bwr: 47.8, label: "天元" },
+      { move: "G7", bwr: 47.5, label: "三々" },
+    ],
+    comment: "小目（D7）始まり。対角のF3が最善応手。"
+  },
+  "D7-F3": {
+    candidates: [
+      { move: "E5", bwr: 48.8, label: "天元" },
+      { move: "G7", bwr: 48.3, label: "三々" },
+      { move: "C3", bwr: 48.0, label: "三々" },
+    ],
+    comment: "互いに小目。黒E5が有力。"
   },
 
-  // ===== 天元→C3→G7→C7→G3 系 =====
-  "E5-C3-G7-C7-G3": {
+  // =============================================================
+  // ■ 小目定石 (F3始まり)
+  // =============================================================
+  "F3": {
     candidates: [
-      { move: "E7", bwr: 52.8, label: "辺" },
-      { move: "E3", bwr: 52.5, label: "辺" },
-      { move: "D5", bwr: 52.0, label: "" },
+      { move: "D7", bwr: 48.3, label: "対角小目" },
+      { move: "C7", bwr: 48.1, label: "三々" },
+      { move: "E5", bwr: 47.8, label: "天元" },
+      { move: "C3", bwr: 47.5, label: "三々" },
     ],
-    comment: "四隅分割完了（別順序）。E5-C3-G7-G3-C7と同じ局面。"
+    comment: "小目（F3）始まり。対角のD7が最善応手。"
+  },
+  "F3-D7": {
+    candidates: [
+      { move: "E5", bwr: 48.8, label: "天元" },
+      { move: "C3", bwr: 48.3, label: "三々" },
+      { move: "G7", bwr: 48.0, label: "三々" },
+    ],
+    comment: "互いに小目。黒E5が有力。"
   },
 };
 
